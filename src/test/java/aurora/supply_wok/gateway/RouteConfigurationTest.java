@@ -66,8 +66,16 @@ class RouteConfigurationTest {
 
     @Test
     void shouldRouteSuppliesToInventoryService() {
+        String testSecret = "local-dev-secret-key-change-me-12345678901234567890";
+        javax.crypto.SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(testSecret.getBytes(StandardCharsets.UTF_8));
+        String validToken = io.jsonwebtoken.Jwts.builder()
+                .subject("test@example.com")
+                .signWith(key)
+                .compact();
+
         webTestClient.get()
                 .uri("/api/v1/supplies")
+                .header("Authorization", "Bearer " + validToken)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType("application/json")
