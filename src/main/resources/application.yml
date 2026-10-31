@@ -8,6 +8,9 @@ spring:
     gateway:
       server:
         webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 4s
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
           globalcors:
@@ -26,46 +29,145 @@ spring:
           routes:
             - id: iam-service-authentication
               uri: ${IAM_SERVICE_URL:http://localhost:8081}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: iam
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/authentication, /api/v1/authentication/**
             - id: iam-service-users
               uri: ${IAM_SERVICE_URL:http://localhost:8081}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: iam
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/users, /api/v1/users/**
             - id: iam-service-profiles
               uri: ${IAM_SERVICE_URL:http://localhost:8081}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: iam
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/profiles, /api/v1/profiles/**
             - id: inventory-service-supplies
               uri: ${INVENTORY_SERVICE_URL:http://localhost:8082}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: inventory
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/supplies, /api/v1/supplies/**
             - id: operations-service-tables
               uri: ${OPERATIONS_SERVICE_URL:http://localhost:8083}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: operations
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/tables, /api/v1/tables/**
             - id: operations-service-comandas
               uri: ${OPERATIONS_SERVICE_URL:http://localhost:8083}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: operations
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/comandas, /api/v1/comandas/**
             - id: operations-service-sensors
               uri: ${OPERATIONS_SERVICE_URL:http://localhost:8083}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: operations
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/sensors, /api/v1/sensors/**
             - id: operations-service-restaurant-alerts
               uri: ${OPERATIONS_SERVICE_URL:http://localhost:8083}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: operations
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/restaurant/alerts, /api/v1/restaurant/alerts/**
             - id: operations-service-supplier-alerts
               uri: ${OPERATIONS_SERVICE_URL:http://localhost:8083}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: operations
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/supplier/alerts, /api/v1/supplier/alerts/**
             - id: purchasing-service-suppliers
               uri: ${PURCHASING_SERVICE_URL:http://localhost:8084}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: purchasing
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/suppliers, /api/v1/suppliers/**
             - id: purchasing-service-purchase-orders
               uri: ${PURCHASING_SERVICE_URL:http://localhost:8084}
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: purchasing
+                    fallbackUri: forward:/internal/dependency-unavailable
+                    statusCodes:
+                      - 502
+                      - 503
+                      - 504
               predicates:
                 - Path=/api/v1/purchase-orders, /api/v1/purchase-orders/**
 
@@ -83,3 +185,15 @@ authorization:
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-key-change-me-12345678901234567890}
 
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 10s
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 4s
